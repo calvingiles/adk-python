@@ -6,6 +6,15 @@ This document outlines the plan to refactor the substantial approval mechanism w
 
 **Key Decision**: Refactor the approval system as an **external plugin package** (`adk-approvals-plugin`) rather than a core ADK change, aligning with the project's plugin architecture direction.
 
+**IMPORTANT UPDATE (2025-10-21)**: The plugin infrastructure **already exists** in upstream Google ADK main branch! This significantly simplifies the work:
+- ✅ `BasePlugin` class fully implemented
+- ✅ `PluginManager` with callback execution
+- ✅ Runner integration complete
+- ✅ Multiple example plugins available
+- ✅ Comprehensive test coverage
+
+**Impact**: Phase 1 (plugin infrastructure) is **already complete**. Work can start directly on creating the approval plugin package.
+
 ---
 
 ## Analysis of Original Work
@@ -57,26 +66,34 @@ The original implementation uses an **LLM Request Processor** pattern:
 
 ## Current ADK Architecture Analysis
 
-### Existing Extension Mechanisms (Main Branch)
+### Existing Extension Mechanisms (Upstream Main Branch)
 
-ADK provides several extension points, but **no formal plugin system yet** (the `BasePlugin` was on the approval branch):
+ADK provides a **fully implemented plugin system** with multiple extension points:
 
-1. **Agent Callbacks** - Per-agent hooks
+1. **Plugin System** - Global, cross-agent extensibility
+   - `BasePlugin` - Abstract base class for plugins
+   - `PluginManager` - Manages registration and callback execution
+   - Plugin callbacks: before/after agent, tool, model, run, events
+   - Examples: `LoggingPlugin`, `ReflectRetryToolPlugin`, `SaveFilesAsArtifactsPlugin`
+   - Registration via `Runner(agent=..., plugins=[...])`
+
+2. **Agent Callbacks** - Per-agent hooks
    - `before_agent_callback`, `after_agent_callback`
    - `before_tool_callback`, `after_tool_callback`
    - `before_model_callback`, `after_model_callback`
+   - Executed **after** plugin callbacks
 
-2. **LLM Request/Response Processors** - Flow-level middleware
+3. **LLM Request/Response Processors** - Flow-level middleware
    - `BaseLlmRequestProcessor` - Modify requests before LLM
    - `BaseLlmResponseProcessor` - Process responses after LLM
    - Examples: `_CodeExecutionProcessor`, `_NlPlanningProcessor`
 
-3. **Tool System** - Extensible tool interface
+4. **Tool System** - Extensible tool interface
    - `BaseTool` - Base class for all tools
    - `FunctionTool` - Wraps Python functions
    - `LongRunningFunctionTool` - Async approval pattern (see `human_in_loop` sample)
 
-4. **Auth System** - Pluggable auth credential exchangers
+5. **Auth System** - Pluggable auth credential exchangers
    - `BaseAuthCredentialExchanger` - Auth plugin interface
    - `AutoAuthCredentialExchanger` - Registry with custom exchangers
 
@@ -235,41 +252,23 @@ def insert_bigquery_data(dataset: str, table: str, data: dict) -> dict:
 
 ## Implementation Plan
 
-### Phase 1: Extract Plugin Infrastructure to Core ADK
+### ~~Phase 1: Extract Plugin Infrastructure to Core ADK~~ ✅ ALREADY COMPLETE
 
-**Goal**: Bring `BasePlugin` from approval branch to main, enabling plugin ecosystem.
+**Status**: The plugin infrastructure is **already fully implemented** in upstream Google ADK main!
 
-**Tasks**:
-1. Cherry-pick commit 4dce9ef (BasePlugin) to new branch from main
-2. Update `Runner` to accept `plugins: list[BasePlugin]` parameter
-3. Implement plugin callback execution order:
-   - Plugins execute before agent callbacks
-   - First non-None return short-circuits
-4. Add plugin callback invocation to appropriate lifecycle points:
-   - In `Runner.run_async()`: `before_run_callback`, `after_run_callback`, `on_event_callback`
-   - In `BaseAgent`: `before_agent_callback`, `after_agent_callback`
-   - In function handling: `before_tool_callback`, `after_tool_callback`
-   - In LLM calls: `before_model_callback`, `after_model_callback`
-5. Add `on_user_message_callback` support
-6. Write unit tests for plugin system
-7. Create plugin documentation and sample (simple logging plugin)
+**What exists**:
+- ✅ `src/google/adk/plugins/base_plugin.py` - Complete BasePlugin class
+- ✅ `src/google/adk/plugins/plugin_manager.py` - PluginManager with callback execution
+- ✅ `src/google/adk/runners.py` - Runner accepts `plugins` parameter
+- ✅ Multiple built-in plugins: LoggingPlugin, ReflectRetryToolPlugin, SaveFilesAsArtifactsPlugin, etc.
+- ✅ Comprehensive test coverage in `tests/unittests/plugins/`
+- ✅ Example plugins in `contributing/samples/plugin_basic/`
 
-**Deliverable**: PR to ADK main with plugin infrastructure
-
-**Files Changed**:
-- `src/google/adk/plugins/__init__.py` (new)
-- `src/google/adk/plugins/base_plugin.py` (new)
-- `src/google/adk/runners.py` (modified - add plugin support)
-- `src/google/adk/agents/base_agent.py` (modified - plugin callback integration)
-- `src/google/adk/flows/llm_flows/functions.py` (modified - tool callback integration)
-- `tests/unittests/plugins/test_base_plugin.py` (new)
-- `docs/plugins/creating_plugins.md` (new)
-
-**Estimated Effort**: 3-5 days
+**No work needed** - Proceed directly to Phase 2!
 
 ---
 
-### Phase 2: Create Approval Plugin Package Skeleton
+### Phase 1: Create Approval Plugin Package Skeleton
 
 **Goal**: Set up external `adk-approvals-plugin` package structure.
 
@@ -304,7 +303,7 @@ def insert_bigquery_data(dataset: str, table: str, data: dict) -> dict:
 
 ---
 
-### Phase 3: Migrate Core Approval Logic to Plugin
+### Phase 2: Migrate Core Approval Logic to Plugin
 
 **Goal**: Move approval mechanism from ADK core to plugin package.
 
@@ -351,7 +350,7 @@ def insert_bigquery_data(dataset: str, table: str, data: dict) -> dict:
 
 ---
 
-### Phase 4: Implement UI Integration
+### Phase 3: Implement UI Integration
 
 **Goal**: Handle approval request/response flow with ADK Runner.
 
@@ -401,7 +400,7 @@ def insert_bigquery_data(dataset: str, table: str, data: dict) -> dict:
 
 ---
 
-### Phase 5: Testing and Validation
+### Phase 4: Testing and Validation
 
 **Goal**: Comprehensive test coverage for plugin.
 
@@ -440,7 +439,7 @@ def insert_bigquery_data(dataset: str, table: str, data: dict) -> dict:
 
 ---
 
-### Phase 6: Documentation and Examples
+### Phase 5: Documentation and Examples
 
 **Goal**: Comprehensive documentation for plugin users.
 
@@ -492,7 +491,7 @@ def insert_bigquery_data(dataset: str, table: str, data: dict) -> dict:
 
 ---
 
-### Phase 7: Polish and Release
+### Phase 6: Polish and Release
 
 **Goal**: Production-ready plugin package.
 
@@ -534,10 +533,11 @@ def insert_bigquery_data(dataset: str, table: str, data: dict) -> dict:
 | Original Approach | Plugin Approach |
 |-------------------|-----------------|
 | `_ApprovalLlmRequestProcessor.run_async()` | `ApprovalPlugin.on_event_callback()` - process approval responses |
-| `ApprovalHandler.get_approval_request()` in function handler | `ApprovalPlugin.before_tool_callback()` - check policies |
+| `ApprovalHandler.get_approval_request()` in function handler | `ApprovalPlugin.before_tool_callback()` - check policies before tool execution |
 | `@tool_policy` decorator | Same - part of plugin package |
-| State management in session | Same - use session.state |
+| State management in session | Same - use session.state via `tool_context.state` or `callback_context.state` |
 | `REQUEST_APPROVAL_FUNCTION_CALL_NAME` | Same - special function call |
+| Integration via LLM processor | Integration via plugin callbacks (cleaner, more standard) |
 
 ### 2. State Schema
 
@@ -568,24 +568,27 @@ state = {
 
 ### 3. Core ADK Changes Needed
 
-**Minimal changes to ADK core** (only plugin infrastructure):
+**✅ NO CHANGES NEEDED** - Plugin infrastructure already exists!
 
-1. **Add `BasePlugin` class** (already designed in approval branch)
-2. **Add plugin support to `Runner`**:
-   ```python
-   class Runner:
-       def __init__(self, agent: BaseAgent, plugins: list[BasePlugin] = None):
-           self.plugins = plugins or []
-   ```
-3. **Add plugin callback invocation** at appropriate lifecycle points
-4. **Add `requested_approvals` to `EventActions`** (already exists in approval branch)
-5. **Optional: Add `tool_context.request_approval()` helper** (can be workaround in plugin)
+**What's already in upstream ADK main**:
+1. ✅ `BasePlugin` class with all required callbacks
+2. ✅ `PluginManager` with execution order and short-circuiting
+3. ✅ `Runner` accepts `plugins` parameter
+4. ✅ Plugin callbacks invoked at all lifecycle points
+5. ✅ `EventActions` has extensible fields
+6. ✅ Multiple example plugins showing patterns
 
-**No changes needed** to:
-- Tool system
-- Flow system (no custom processors)
-- Agent system (uses standard callbacks)
-- Session system (uses standard state)
+**What the approval plugin will use**:
+- Standard `before_tool_callback()` - Check policies before tool execution
+- Standard `on_event_callback()` - Process approval responses
+- Standard state management via `callback_context.state`
+- Standard event emission via return values
+
+**No changes needed** to ADK core:
+- ✅ Tool system - works as-is
+- ✅ Flow system - no custom processors needed
+- ✅ Agent system - uses standard plugin callbacks
+- ✅ Session system - uses standard state
 
 ### 4. Dependency Management
 
@@ -717,16 +720,18 @@ runner = Runner(
 
 | Phase | Tasks | Duration |
 |-------|-------|----------|
-| 1. Plugin Infrastructure to Core | BasePlugin + Runner integration | 3-5 days |
-| 2. Package Skeleton | Repo setup, structure | 1-2 days |
-| 3. Migrate Core Logic | Port approval code to plugin | 5-7 days |
-| 4. UI Integration | Approval request/response flow | 3-4 days |
-| 5. Testing | Comprehensive test suite | 5-7 days |
-| 6. Documentation | Docs + examples | 4-6 days |
-| 7. Polish & Release | QA, publish | 3-4 days |
-| **Total** | | **24-35 days** |
+| ~~1. Plugin Infrastructure to Core~~ | ~~BasePlugin + Runner integration~~ | ~~✅ COMPLETE~~ |
+| 1. Package Skeleton | Repo setup, structure | 1-2 days |
+| 2. Migrate Core Logic | Port approval code to plugin | 5-7 days |
+| 3. UI Integration | Approval request/response flow | 3-4 days |
+| 4. Testing | Comprehensive test suite | 5-7 days |
+| 5. Documentation | Docs + examples | 4-6 days |
+| 6. Polish & Release | QA, publish | 3-4 days |
+| **Total** | | **22-30 days** |
 
-**Realistic Timeline**: 5-7 weeks (accounting for reviews, iterations)
+**Realistic Timeline**: 4-6 weeks (accounting for reviews, iterations)
+
+**Time Saved**: ~3-5 days thanks to existing plugin infrastructure!
 
 ---
 
