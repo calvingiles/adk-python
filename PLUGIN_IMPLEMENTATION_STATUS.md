@@ -4,7 +4,7 @@
 
 Created initial package structure for `adk-approvals-plugin` as a standalone Python package in `/home/user/adk-python/adk-approvals-plugin/`.
 
-**Status**: Phase 1 Complete ✅ | Phase 2 In Progress 🚧
+**Status**: Phase 1 Complete ✅ | Phase 2 Complete ✅ | Phase 3 In Progress 🚧
 
 ## What's Been Created
 
@@ -22,7 +22,12 @@ adk-approvals-plugin/
 │   └── py.typed             ✅ Type checking marker
 ├── examples/
 │   └── simple_approval.py   ✅ Basic usage example
-├── tests/                   📁 Created (empty - tests TODO)
+├── tests/
+│   ├── conftest.py          ✅ Test fixtures (policy registry cleanup)
+│   └── unit/
+│       ├── test_grant.py    ✅ Grant and actor tests (7 tests)
+│       ├── test_policy.py   ✅ Policy framework tests (7 tests)
+│       └── test_request.py  ✅ Request/response tests (6 tests)
 ├── pyproject.toml           ✅ Package configuration
 ├── README.md                ✅ Comprehensive documentation
 ├── LICENSE                  ✅ Apache 2.0
@@ -133,7 +138,43 @@ adk-approvals-plugin/
 - Error handling: Fails open (allows on error) with comprehensive logging
 - All imports added: `ApprovalGrant`, `ApprovalHandler`, `ApprovalResponse`
 
-**Testing status**: ⏳ Needs manual testing and unit tests
+**Testing status**: ✅ Unit tests complete (20/20 passing)
+
+### Files Complete - Phase 3 (🚧 In Progress)
+
+#### Unit Tests - ✅ **COMPLETE**
+
+**Test files created**:
+- `tests/conftest.py` - Test configuration with policy registry cleanup fixture
+- `tests/unit/test_grant.py` - 7 tests for grant and actor models
+- `tests/unit/test_policy.py` - 7 tests for policy framework and decorators
+- `tests/unit/test_request.py` - 6 tests for request/response models
+
+**Test coverage**: 20 unit tests, all passing ✅
+
+**Import compatibility fixes**:
+- Made `ApprovalPlugin` import lazy to avoid requiring `google.adk` at package import time
+- Made `BaseTool` import optional in `policy.py` using try/except
+- Changed `FunctionCall` type from `google.genai.types.FunctionCall` to `dict[str, Any]` for flexibility
+- Updated `handler.py` to convert FunctionCall objects to dicts for serialization
+- Tests can now run without full `google-adk` installation
+
+**What's tested**:
+- ✅ ApprovalActor creation and delegation chains
+- ✅ ApprovalGrant with allow/deny effects
+- ✅ Grant expiration handling
+- ✅ Grant serialization/deserialization
+- ✅ @tool_policy decorator functionality
+- ✅ Policy registry operations
+- ✅ Resource parameter mapping
+- ✅ ApprovalChallenge, ApprovalRequest, ApprovalResponse models
+- ✅ Request/response serialization
+
+**What's NOT tested yet**:
+- ⏳ Integration tests (need full ADK environment)
+- ⏳ Handler methods (require mock ToolContext)
+- ⏳ Plugin callbacks (require Runner integration)
+- ⏳ End-to-end approval flows
 
 ## Architecture Integration
 
@@ -365,15 +406,12 @@ runner = Runner(agent=agent, plugins=[ApprovalPlugin()])
   - Total: ~100 lines of callback implementation
   - Reuses existing handler logic (no duplication)
 
-- **Day 2-3** (Estimated): 🚧 Phase 3 in progress
-  - Manual testing with simple examples
-  - Port tests from original branch
-  - Create integration tests
-
-- **Day 4-5** (Estimated): Phase 3 - Testing
-  - Port and adapt tests
-  - Create new plugin-specific tests
-  - Achieve >90% coverage
+- **Day 2** (2025-10-22): 🚧 Phase 3 in progress
+  - ✅ Created comprehensive unit tests (20 tests, all passing)
+  - ✅ Fixed import dependencies for test isolation
+  - ✅ Tests run without requiring full google-adk installation
+  - ⏳ Integration tests TODO
+  - ⏳ Manual testing with examples TODO
 
 - **Day 6-7** (Estimated): Phase 4 - Examples & Docs
   - Create BigQuery example
@@ -412,22 +450,29 @@ runner = Runner(agent=agent, plugins=[ApprovalPlugin()])
 **Completed**:
 - ✅ Phase 1: Package structure, core logic ported, documentation
 - ✅ Phase 2: Plugin callback implementations (both methods complete!)
+- ✅ Phase 3 (partial): Unit tests complete (20/20 passing)
 
-**In Progress**: Phase 3 - Testing and validation
+**In Progress**:
+- 🚧 Phase 3: Integration tests and manual validation
 
-**Next**: Manual testing, port existing tests, create examples
+**Next**:
+- Integration tests with full ADK environment
+- Manual testing with real tools
+- Additional examples (BigQuery, file system)
 
 **Blockers**: None
 
-The implementation is now **functionally complete**! The remaining work is:
+The core implementation is **functionally complete**! The remaining work is:
 1. ✅ ~~Implementing the two plugin callback methods~~ DONE
-2. ⏳ Testing (manual + unit tests)
-3. ⏳ Additional examples (BigQuery, file system)
-4. ⏳ Polish and release preparation
+2. ✅ ~~Unit tests for data models~~ DONE (20 tests passing)
+3. ⏳ Integration tests (handler, plugin callbacks)
+4. ⏳ Manual testing with examples
+5. ⏳ Additional examples (BigQuery, file system)
+6. ⏳ Polish and release preparation
 
 **Estimated time to working prototype**: ✅ **COMPLETE** (faster than expected!)
-**Estimated time to tested & release-ready**: 3-5 days
+**Estimated time to tested & release-ready**: 2-4 days
 
 ---
 
-_Last Updated: 2025-10-21_
+_Last Updated: 2025-10-22_
